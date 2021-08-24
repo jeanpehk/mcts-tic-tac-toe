@@ -35,7 +35,7 @@ def play(s, turn):
     winner = check(s)
   return winner, s
 
-# MCTS
+# TREE NODE
 
 class Node:
   def __init__(self, parent, state, wr):
@@ -51,10 +51,14 @@ class Node:
     if check(self.state[0]) is not None:
       return None
     else:
-      # todo
+      tried = []
       for i in range(len(self.nodes)):
-#        n = randrange(len(self.nodes))
-        leaf = self.nodes[i].select()
+        while True:
+          n = randrange(len(self.nodes))
+          if n not in tried:
+            tried.append(n)
+            break
+        leaf = self.nodes[n].select()
         if leaf is not None:
           return leaf
     print('None for entire select')
@@ -123,15 +127,16 @@ def mcts(root):
     w, s = play(child.state[0].copy(), child.state[1])
     child.update(w)
 
-  # decide move
-  move = -100000
+  hi = 0
+  move = None
   for n in root.nodes:
     print('wr: (%d, %d, %d)' % (n.wr[0], n.wr[1], n.wr[2]))
     total = n.wr[0]+n.wr[1]+n.wr[2]
     if total > 0:
-      wr = n.wr[1]/(n.wr[0]+n.wr[1]+n.wr[2])
-      if wr > move:
-        move = wr
+      wr = n.wr[1]/total
+      if wr > hi:
+        hi = wr
+        move = n
   return move
 
 winner = None
@@ -140,28 +145,6 @@ root = Node(None, (state[0],state[1]), [0,0,0])
 print(root.state)
 while winner is None:
   mv = mcts(root)
-  print(mv)
+  print(mv.state)
   break
 
-route = []
-travel(root, route)
-for r in route:
-  print(r.state)
-
-#for i in range(10):
-#  route = []
-#  print('round: %d' % i)
-#  root = node.rewind()
-#  leaf = root.select()
-#  child = leaf.expand()
-#  travel(child, route)
-#  for r in route:
-#    print(r.state)
-#
-#  if child is not None:
-#    w, s = play(child.state[0].copy(), child.state[1])
-#    child.update(w)
-#  else:
-#    print('what now')
-#    break
-#
