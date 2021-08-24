@@ -128,9 +128,9 @@ def mcts(root):
     child = leaf.expand()
     w, s = play(child.state[0].copy(), child.state[1])
     child.update(w)
-
-  hi = 0
+  hi = -1
   move = None
+  print('\n- MCTS search outcomes:\n')
   for n in root.nodes:
     b = [as_char(x) for x in n.state[0]]
     total = n.wr[0]+n.wr[1]+n.wr[2]
@@ -162,9 +162,7 @@ winner = None
 state = ([0]*9, 1)
 root = Node(None, (state[0],state[1]), [0,0,0])
 while winner is None:
-  print('\n- MCTS search outcomes:\n')
   mv = mcts(root)
-  # todo this bugs out when no moves left e.g. in a tie
   state = mv.state[0]
   print('\n- Board state after MCTS move:\n')
   print_board(state)
@@ -182,5 +180,9 @@ while winner is None:
     winner = check(state)
     root = Node(None, (state, 1), [0,0,0])
 
-print('winner: %d' % winner)
+winner = as_char(winner)
+if winner == ' ':
+  print('\nTie!')
+else:
+  print('\nWinner: %s' % winner)
 
