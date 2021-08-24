@@ -45,40 +45,56 @@ class Node:
     self.nodes = []
 
   def select(self):
-    if check(self.state[0]) is not None:
-#      print('no moves left for node with state: %s' % self.state[0])
-#      print('returning None')
-      return None
-    if not self.nodes and check(self.state[0]) is None:
+    moves = self.get_new_moves()
+    if moves:
       return self
-    # no new playouts left for this node
-    for i in range(len(self.nodes)):
-      n = randrange(len(self.nodes))
-      leaf = self.nodes[n].select()
-      if leaf is not None:
-        return leaf
-      else:
-        # None returned -> no moves left for child
-        assert(check(self.state[0]) is None)
-        return self
-    raise Exception('All possible paths taken?')
+    if check(self.state[0]) is not None:
+      return None
+    else:
+      # todo
+      for i in range(len(self.nodes)):
+#        n = randrange(len(self.nodes))
+        leaf = self.nodes[i].select()
+        if leaf is not None:
+          return leaf
+    print('None for entire select')
+    return None
+
+  def can_expand(self):
+    winner = check(self.state[0])
+    if winner is not None:
+      return False
+    moves = self.get_new_moves()
+    if not moves:
+      return False
+    return True
 
   def expand(self):
-    winner = check(self.state[0])
-    if check(self.state[0]) is not None:
-      self.wr[winner] += 1
-      self.update(winner)
+    moves = self.get_new_moves()
+    if not moves:
+      print('error: no moves left')
       return None
 
-    # no winner so expand
-    moves = self.get_valid_moves()
-    new_state = self.state[0].copy()
-    mv = moves[randrange(len(moves))] # choose move at random
-    new_state[mv] = self.state[1]
-    turn = 1 if self.state[1] == 2 else 2
-    node = Node(self, (new_state, turn), [0,0,0])
-    self.nodes.append(node)
-    return node
+    mv = moves[randrange(len(moves))]
+    chosen = None
+    for m in moves:
+      new_state = self.state[0].copy()
+      new_state[m] = self.state[1]
+      turn = 1 if self.state[1] == 2 else 2
+      node = Node(self, [new_state, turn], [0,0,0])
+      self.nodes.append(node)
+      if m == mv:
+        chosen = node
+
+    return chosen
+
+  def get_new_moves(self):
+    moves = []
+    for i in range(len(self.state[0])):
+      done = [n.state for n in self.nodes if n.state[0][i] != 0]
+      if self.state[0][i] == 0 and not done:
+        moves.append(i)
+    return moves
 
   def rewind(self):
     if self.parent is None:
@@ -91,27 +107,61 @@ class Node:
     if self.parent is not None:
       self.parent.update(result)
 
-  def get_valid_moves(self):
-    moves = []
-    for i in range(len(self.state[0])):
-      if self.state[0][i] == 0:
-        moves.append(i)
-    return moves
+  def simulate(self):
+    w, s = play(self.state[0].copy(), self.state[1])
+    self.update(w)
 
-class Smart:
-  def __init__(self, tree):
-    self.tree = tree
+def travel(node, route):
+  route.insert(0, node)
+  if node.parent is not None:
+    travel(node.parent, route)
 
-
-node = Node(None, ([0]*9, 1), [0,0,0])
-for i in range(100000):
-  root = node.rewind()
-  leaf = root.select()
-  child = leaf.expand()
-  if child is not None:
+def mcts(root):
+  for i in range(1000):
+    leaf = root.select()
+    child = leaf.expand()
     w, s = play(child.state[0].copy(), child.state[1])
     child.update(w)
-  else:
-    print('what now')
-    break
 
+  # decide move
+  move = -100000
+  for n in root.nodes:
+    print('wr: (%d, %d, %d)' % (n.wr[0], n.wr[1], n.wr[2]))
+    total = n.wr[0]+n.wr[1]+n.wr[2]
+    if total > 0:
+      wr = n.wr[1]/(n.wr[0]+n.wr[1]+n.wr[2])
+      if wr > move:
+        move = wr
+  return move
+
+winner = None
+state = ([0]*9, 1)
+root = Node(None, (state[0],state[1]), [0,0,0])
+print(root.state)
+while winner is None:
+  mv = mcts(root)
+  print(mv)
+  break
+
+route = []
+travel(root, route)
+for r in route:
+  print(r.state)
+
+#for i in range(10):
+#  route = []
+#  print('round: %d' % i)
+#  root = node.rewind()
+#  leaf = root.select()
+#  child = leaf.expand()
+#  travel(child, route)
+#  for r in route:
+#    print(r.state)
+#
+#  if child is not None:
+#    w, s = play(child.state[0].copy(), child.state[1])
+#    child.update(w)
+#  else:
+#    print('what now')
+#    break
+#
