@@ -61,7 +61,6 @@ class Node:
         leaf = self.nodes[n].select()
         if leaf is not None:
           return leaf
-    print('None for entire select')
     return None
 
   def can_expand(self):
@@ -121,8 +120,11 @@ def travel(node, route):
     travel(node.parent, route)
 
 def mcts(root):
-  for i in range(1000):
+  for i in range(10000):
     leaf = root.select()
+    if leaf is None:
+#      print('search ended at i: %d' % i)
+      break
     child = leaf.expand()
     w, s = play(child.state[0].copy(), child.state[1])
     child.update(w)
@@ -130,21 +132,55 @@ def mcts(root):
   hi = 0
   move = None
   for n in root.nodes:
-    print('wr: (%d, %d, %d)' % (n.wr[0], n.wr[1], n.wr[2]))
+    b = [as_char(x) for x in n.state[0]]
     total = n.wr[0]+n.wr[1]+n.wr[2]
-    if total > 0:
-      wr = n.wr[1]/total
-      if wr > hi:
-        hi = wr
-        move = n
+    wr = n.wr[1]/total if total > 0 else 0
+    print(n)
+    print(str(b[:3]) + ' '*17)
+    print('{} {:8.8}'.format(b[3:][:3], wr))
+    print(str(b[6:]) + ' '*17)
+    if wr > hi:
+      hi = wr
+      move = n
   return move
+
+def as_char(c):
+  if c == 1:
+    return 'X'
+  elif c == 2:
+    return 'O'
+  else:
+    return ' '
+
+def print_board(s):
+  b = [as_char(x) for x in s]
+  print(b[:3])
+  print(b[3:][:3])
+  print(b[6:])
 
 winner = None
 state = ([0]*9, 1)
 root = Node(None, (state[0],state[1]), [0,0,0])
-print(root.state)
 while winner is None:
+  print('\n- MCTS search outcomes:\n')
   mv = mcts(root)
-  print(mv.state)
-  break
+  # todo this bugs out when no moves left e.g. in a tie
+  state = mv.state[0]
+  print('\n- Board state after MCTS move:\n')
+  print_board(state)
+  winner = check(state)
+  if winner is None:
+    while True:
+      my_move = int(input('\nYour Move: '))
+      if state[my_move] == 0:
+        state[my_move] = 2
+        break
+      else:
+        print('mv %d unavailable at state %s' % (my_move, state))
+    print('\n- Board state after your move:\n')
+    print_board(state)
+    winner = check(state)
+    root = Node(None, (state, 1), [0,0,0])
+
+print('winner: %d' % winner)
 
