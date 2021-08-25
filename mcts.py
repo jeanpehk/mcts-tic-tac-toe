@@ -2,12 +2,11 @@
 
 from random import randrange
 
-# TIC TAC TOE
+# Constants for the game
 
 TIE = 0
 wins = [[0,1,2], [3,4,5], [6,7,8], [0,3,6], [1,4,7], [2,5,8], [0,4,8], [6,4,2]]
 
-# check for winner
 def check(s):
   winner = None
   for w in wins:
@@ -22,7 +21,7 @@ def move(state, turn):
   for i in range(len(state)):
     if state[i] == 0:
       moves.append(i)
-  assert(len(moves) > 0) # need to have moves left to call this
+  assert(len(moves) > 0)
   mv = randrange(len(moves))
   state[moves[mv]] = turn
   return state
@@ -105,14 +104,10 @@ class Node:
     else:
       return self.parent.rewind()
 
-  def update(self, result):
+  def update(self, root, result):
     self.wr[result] += 1
-    if self.parent is not None:
-      self.parent.update(result)
-
-  def simulate(self):
-    w, s = play(self.state[0].copy(), self.state[1])
-    self.update(w)
+    if self.state != root.state:
+      self.parent.update(root, result)
 
 def travel(node, route):
   route.insert(0, node)
@@ -120,15 +115,15 @@ def travel(node, route):
     travel(node.parent, route)
 
 def mcts(root):
-  for i in range(10000):
+  for i in range(1000):
     leaf = root.select()
     if leaf is None:
 #      print('search ended at i: %d' % i)
       break
     child = leaf.expand()
     w, s = play(child.state[0].copy(), child.state[1])
-    child.update(w)
-  hi = -1
+    child.update(root, w)
+  hi = 0
   move = None
   print('\n- MCTS search outcomes:\n')
   for n in root.nodes:
@@ -139,7 +134,7 @@ def mcts(root):
     print(str(b[:3]) + ' '*17)
     print('{} {:8.8}'.format(b[3:][:3], wr))
     print(str(b[6:]) + ' '*17)
-    if wr > hi:
+    if wr >= hi:
       hi = wr
       move = n
   return move
