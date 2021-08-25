@@ -42,12 +42,7 @@ def player_move(state):
       print('move %d unavailable at state %s' % (move, state))
 
 def as_char(c):
-  if c == 1:
-    return 'X'
-  elif c == 2:
-    return 'O'
-  else:
-    return ' '
+  return 'X' if c == 1 else 'O' if c == 2 else ' '
 
 def print_board(s):
   b = [as_char(x) for x in s]
