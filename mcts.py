@@ -24,13 +24,36 @@ def move(state, turn):
   state[moves[mv]] = turn
   return state
 
-def play(s, turn):
+def playout(s, turn):
   winner = check(s)
   while winner is None:
     s = move(s, turn)
     turn = 1 if turn == 2 else 2
     winner = check(s)
   return winner, s
+
+def player_move(state):
+  while True:
+    move = int(input('\nYour Move: '))
+    if state[move] == 0:
+      state[move] = 2
+      return
+    else:
+      print('move %d unavailable at state %s' % (move, state))
+
+def as_char(c):
+  if c == 1:
+    return 'X'
+  elif c == 2:
+    return 'O'
+  else:
+    return ' '
+
+def print_board(s):
+  b = [as_char(x) for x in s]
+  print(b[:3])
+  print(b[3:][:3])
+  print(b[6:])
 
 # TREE NODE
 
@@ -99,13 +122,13 @@ class Node:
     print(str(s[6:]) + ' '*17)
 
 def mcts(root):
-  for i in range(1000):
+  for i in range(10000):
     leaf = root.select()
     if leaf is None:
 #      print('search ended at i: %d' % i)
       break
     child = leaf.expand()
-    w, s = play(child.state[0].copy(), child.state[1])
+    w, s = playout(child.state[0].copy(), child.state[1])
     child.update(root, w)
   hi = 0
   move = None
@@ -120,43 +143,35 @@ def mcts(root):
       move = n
   return move
 
-def as_char(c):
-  if c == 1:
-    return 'X'
-  elif c == 2:
-    return 'O'
-  else:
-    return ' '
-
-def print_board(s):
-  b = [as_char(x) for x in s]
-  print(b[:3])
-  print(b[3:][:3])
-  print(b[6:])
-
 # Play
 
-winner = None
-state = ([0]*9, 1)
-root = Node(None, (state[0],state[1]), [0,0,0])
+print(' MCTS Tic Tac Toe! '.center(70, '*'))
+print('- When playing choose next move by identifying a board index (0-9)')
+print('- When moving MCTS prints weights of all its next possible moves')
+print('*'*70)
+input('\nPress Enter to Continue...')
+
+turn = int(input('\nChoose turn (1 = MCTS, 2 = You): '))
+
+winner, state = None, [0]*9
 while winner is None:
-  mv = mcts(root)
-  state = mv.state[0]
-  print('\n- Board state after MCTS move:\n')
+  # players turn
+  if turn == 2:
+    player_move(state)
+    print('\n- Board state after your move:\n')
+  # mcts turn
+  elif turn == 1:
+    root = Node(None, (state, 1), [0]*3)
+    mv = mcts(root)
+    state = mv.state[0]
+    print('\n- Board state after MCTS move:\n')
+  else:
+    print("Unknown turn: %s (0 = 'X' = MCTS, 1 = 'O' = You)")
+    break
+
   print_board(state)
   winner = check(state)
-  if winner is None:
-    while True:
-      my_move = int(input('\nYour Move: '))
-      if state[my_move] == 0:
-        state[my_move] = 2
-        break
-      else:
-        print('mv %d unavailable at state %s' % (my_move, state))
-    print('\n- Board state after your move:\n')
-    print_board(state)
-    winner = check(state)
-    root = Node(None, (state, 1), [0,0,0])
+  turn = 1 if turn == 2 else 2
 
 winner = as_char(winner)
 if winner == ' ':
