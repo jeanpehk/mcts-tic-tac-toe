@@ -2,8 +2,6 @@
 
 from random import randrange
 
-# Constants for the game
-
 TIE = 0
 wins = [[0,1,2], [3,4,5], [6,7,8], [0,3,6], [1,4,7], [2,5,8], [0,4,8], [6,4,2]]
 
@@ -62,21 +60,11 @@ class Node:
           return leaf
     return None
 
-  def can_expand(self):
-    winner = check(self.state[0])
-    if winner is not None:
-      return False
-    moves = self.get_new_moves()
-    if not moves:
-      return False
-    return True
-
   def expand(self):
     moves = self.get_new_moves()
     if not moves:
       print('error: no moves left')
       return None
-
     mv = moves[randrange(len(moves))]
     chosen = None
     for m in moves:
@@ -87,7 +75,6 @@ class Node:
       self.nodes.append(node)
       if m == mv:
         chosen = node
-
     return chosen
 
   def get_new_moves(self):
@@ -98,21 +85,18 @@ class Node:
         moves.append(i)
     return moves
 
-  def rewind(self):
-    if self.parent is None:
-      return self
-    else:
-      return self.parent.rewind()
-
   def update(self, root, result):
     self.wr[result] += 1
     if self.state != root.state:
       self.parent.update(root, result)
 
-def travel(node, route):
-  route.insert(0, node)
-  if node.parent is not None:
-    travel(node.parent, route)
+  def print_state(self):
+    s = [as_char(x) for x in self.state[0]]
+    wr = self.wr[1]/sum(self.wr) if sum(self.wr) > 0 else 0
+    print(self)
+    print(str(s[:3]) + ' '*17)
+    print('{} {:8.8}'.format(s[3:][:3], wr))
+    print(str(s[6:]) + ' '*17)
 
 def mcts(root):
   for i in range(1000):
@@ -128,12 +112,9 @@ def mcts(root):
   print('\n- MCTS search outcomes:\n')
   for n in root.nodes:
     b = [as_char(x) for x in n.state[0]]
-    total = n.wr[0]+n.wr[1]+n.wr[2]
+    total = sum(n.wr)
     wr = n.wr[1]/total if total > 0 else 0
-    print(n)
-    print(str(b[:3]) + ' '*17)
-    print('{} {:8.8}'.format(b[3:][:3], wr))
-    print(str(b[6:]) + ' '*17)
+    n.print_state()
     if wr >= hi:
       hi = wr
       move = n
@@ -152,6 +133,8 @@ def print_board(s):
   print(b[:3])
   print(b[3:][:3])
   print(b[6:])
+
+# Play
 
 winner = None
 state = ([0]*9, 1)
